@@ -1,41 +1,357 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Наш дом</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    >
+
+    <title>Наш дом</title>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
+
 <body>
-<div class="wrap">
-  <header><div><div class="eyebrow">🏠 НАШ ДОМ</div><h1>Запасы</h1></div><button id="inviteBtn">👥</button></header>
-  <nav>
-    <button class="tab active" data-tab="home">🏠 Дом</button>
-    <button class="tab" data-tab="shopping">🛒 Покупки</button>
-  </nav>
-  <section id="home">
-    <div class="summary" id="summary"></div>
-    <button class="primary" id="addBtn">＋ Добавить</button>
-    <div id="products"></div>
-  </section>
-  <section id="shopping" class="hidden">
-    <button class="primary" id="shopAddBtn">＋ В список покупок</button>
-    <div id="shoppingList"></div>
-  </section>
+
+<div class="app">
+
+    <!-- Шапка -->
+    <header class="header">
+        <div>
+            <div class="small-title">Наш дом</div>
+            <h1>🏠 Дом</h1>
+        </div>
+
+        <button class="icon-button" onclick="openAddModal()">＋</button>
+    </header>
+
+
+    <!-- Главная навигация -->
+    <nav class="tabs">
+        <button class="tab active" onclick="showSection('home')" id="homeTab">
+            🏠 Запасы
+        </button>
+
+        <button class="tab" onclick="showSection('shopping')" id="shoppingTab">
+            🛒 Покупки
+        </button>
+    </nav>
+
+
+    <!-- ==================== ЗАПАСЫ ==================== -->
+
+    <main id="homeSection" class="section">
+
+        <div class="welcome-card">
+            <div class="welcome-icon">🏠</div>
+
+            <div>
+                <h2>Всё под контролем</h2>
+                <p>Храните продукты и вещи дома в одном месте.</p>
+            </div>
+        </div>
+
+
+        <!-- Быстрая статистика -->
+        <div class="stats">
+
+            <div class="stat-card">
+                <span class="stat-icon">📦</span>
+                <div>
+                    <strong id="productsCount">0</strong>
+                    <span>товаров</span>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <span class="stat-icon">🛒</span>
+                <div>
+                    <strong id="shoppingCount">0</strong>
+                    <span>купить</span>
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="section-title-row">
+            <h2>Мои запасы</h2>
+
+            <button class="text-button" onclick="openAddModal()">
+                ＋ Добавить
+            </button>
+        </div>
+
+
+        <div id="productsList" class="products-list">
+            <div class="loading">
+                Загружаем ваши товары…
+            </div>
+        </div>
+
+    </main>
+
+
+    <!-- ==================== ПОКУПКИ ==================== -->
+
+    <main id="shoppingSection" class="section hidden">
+
+        <div class="shopping-header">
+            <div>
+                <div class="small-title">Список</div>
+                <h2>🛒 Покупки</h2>
+            </div>
+
+            <button class="icon-button" onclick="openShoppingModal()">
+                ＋
+            </button>
+        </div>
+
+
+        <div id="shoppingList" class="shopping-list">
+            <div class="loading">
+                Загружаем список…
+            </div>
+        </div>
+
+    </main>
+
 </div>
 
-<div id="modal" class="modal hidden">
- <div class="sheet">
-  <h2 id="modalTitle">Добавить</h2>
-  <input id="name" placeholder="Например: туалетная бумага">
-  <select id="category"></select>
-  <div class="row"><input id="quantity" type="number" min="0" step="0.1" value="1"><input id="unit" placeholder="шт."></div>
-  <div class="row"><input id="min" type="number" min="0" step="0.1" value="0" placeholder="Минимум"><input id="expiry" type="date"></div>
-  <button class="primary" id="save">Сохранить</button>
-  <button class="cancel" id="close">Отмена</button>
- </div>
+
+<!-- ==================== МОДАЛЬНОЕ ОКНО ТОВАРА ==================== -->
+
+<div id="productModal" class="modal hidden">
+
+    <div class="modal-overlay" onclick="closeAddModal()"></div>
+
+    <div class="modal-window">
+
+        <div class="modal-header">
+            <div>
+                <div class="small-title">Новый товар</div>
+                <h2>Добавить товар</h2>
+            </div>
+
+            <button class="close-button" onclick="closeAddModal()">
+                ×
+            </button>
+        </div>
+
+
+        <label class="field-label">
+            Название
+        </label>
+
+        <input
+            id="productName"
+            class="input"
+            type="text"
+            placeholder="Например: туалетная бумага"
+        >
+
+
+        <div class="two-columns">
+
+            <div>
+                <label class="field-label">
+                    Количество
+                </label>
+
+                <input
+                    id="productQuantity"
+                    class="input"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value="1"
+                >
+            </div>
+
+
+            <div>
+                <label class="field-label">
+                    Единица
+                </label>
+
+                <select id="productUnit" class="input">
+                    <option value="шт.">шт.</option>
+                    <option value="кг">кг</option>
+                    <option value="г">г</option>
+                    <option value="л">л</option>
+                    <option value="мл">мл</option>
+                    <option value="уп.">уп.</option>
+                    <option value="пач.">пач.</option>
+                    <option value="бут.">бут.</option>
+                </select>
+            </div>
+
+        </div>
+
+
+        <label class="field-label">
+            Категория
+        </label>
+
+        <select id="productCategory" class="input">
+
+            {% for category in categories %}
+            <option value="{{ category }}">
+                {{ category }}
+            </option>
+            {% endfor %}
+
+        </select>
+
+
+        <label class="field-label">
+            Минимальный остаток
+        </label>
+
+        <input
+            id="productMinQuantity"
+            class="input"
+            type="number"
+            min="0"
+            step="0.1"
+            value="0"
+        >
+
+
+        <label class="field-label">
+            Срок годности
+        </label>
+
+        <input
+            id="productExpiration"
+            class="input"
+            type="date"
+        >
+
+
+        <div class="modal-buttons">
+
+            <button
+                class="button secondary"
+                onclick="closeAddModal()"
+            >
+                Отмена
+            </button>
+
+            <button
+                class="button primary"
+                onclick="saveProduct()"
+            >
+                Сохранить
+            </button>
+
+        </div>
+
+    </div>
+
 </div>
-<script src="/static/app.js"></script>
+
+
+<!-- ==================== МОДАЛЬНОЕ ОКНО ПОКУПОК ==================== -->
+
+<div id="shoppingModal" class="modal hidden">
+
+    <div class="modal-overlay" onclick="closeShoppingModal()"></div>
+
+    <div class="modal-window">
+
+        <div class="modal-header">
+            <div>
+                <div class="small-title">Покупки</div>
+                <h2>Добавить в список</h2>
+            </div>
+
+            <button class="close-button" onclick="closeShoppingModal()">
+                ×
+            </button>
+        </div>
+
+
+        <label class="field-label">
+            Что нужно купить?
+        </label>
+
+        <input
+            id="shoppingName"
+            class="input"
+            type="text"
+            placeholder="Например: молоко"
+        >
+
+
+        <div class="two-columns">
+
+            <div>
+                <label class="field-label">
+                    Количество
+                </label>
+
+                <input
+                    id="shoppingQuantity"
+                    class="input"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value="1"
+                >
+            </div>
+
+
+            <div>
+                <label class="field-label">
+                    Единица
+                </label>
+
+                <select id="shoppingUnit" class="input">
+                    <option value="шт.">шт.</option>
+                    <option value="кг">кг</option>
+                    <option value="г">г</option>
+                    <option value="л">л</option>
+                    <option value="мл">мл</option>
+                    <option value="уп.">уп.</option>
+                    <option value="пач.">пач.</option>
+                </select>
+            </div>
+
+        </div>
+
+
+        <div class="modal-buttons">
+
+            <button
+                class="button secondary"
+                onclick="closeShoppingModal()"
+            >
+                Отмена
+            </button>
+
+            <button
+                class="button primary"
+                onclick="saveShopping()"
+            >
+                Добавить
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- JavaScript -->
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+
 </body>
 </html>
