@@ -106,6 +106,46 @@ def add_product():
     return jsonify(sb("products", "POST", row)[0])
 
 @app.patch("/api/product/<int:pid>")
+@app.post("/api/product/<int:pid>/use")
+def use_product(pid):
+    d = request.json or {}
+
+    tg_id = int(d.get("telegram_id", 0))
+    user = ensure_user(tg_id, d.get("user_name", "Пользователь"))
+
+    product_rows = sb(
+        "products",
+        params={
+            "id": f"eq.{pid}",
+            "select": "*"
+        }
+    )
+
+    if not product_rows:
+        return jsonify({"error": "Товар не найден"}), 404
+
+    product = product_rows[0]
+
+    amount = float(d.get("amount", 1))
+    current_quantity = float(product.get("quantity", 0))
+
+    new_quantity = max(0, current_quantity - amount)
+
+    row = sb(
+        "products",
+        "PATCH",
+        {
+            "quantity": new_quantity,
+            "last_used_by": user["id"],
+            "last_used_at": datetime.now(timezone.utc).isoformat()
+        },
+        params={
+            "id": f"eq.{pid}",
+            "select": "*"
+        }
+    )
+
+    return jsonify(row[0] if row else {})
 def update_product(pid):
     d = request.json or {}
     allowed = {k: d[k] for k in ["quantity","min_quantity","expiration_date","name","category","unit"] if k in d}
