@@ -7,11 +7,6 @@ if (tg) {
     tg.expand();
 }
 
-
-// ===============================
-// ДАННЫЕ ПОЛЬЗОВАТЕЛЯ
-// ===============================
-
 let telegramUser = null;
 
 if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
@@ -26,17 +21,12 @@ const userName = telegramUser
     ? (telegramUser.first_name || "Пользователь")
     : "Пользователь";
 
-
-// ===============================
-// СОСТОЯНИЕ
-// ===============================
-
 let products = [];
 let shopping = [];
 
 
 // ===============================
-// ЗАГРУЗКА
+// ЗАГРУЗКА ДАННЫХ
 // ===============================
 
 async function loadState() {
@@ -67,8 +57,13 @@ async function loadState() {
         document.getElementById("productsList").innerHTML = `
             <div class="empty">
                 <div class="empty-icon">😕</div>
+
                 <h3>Не удалось загрузить данные</h3>
-                <p>Попробуйте закрыть приложение и открыть его снова.</p>
+
+                <p>
+                    Попробуйте закрыть приложение
+                    и открыть его снова.
+                </p>
             </div>
         `;
     }
@@ -76,31 +71,42 @@ async function loadState() {
 
 
 // ===============================
-// ВКЛАДКИ
+// ПЕРЕКЛЮЧЕНИЕ РАЗДЕЛОВ
 // ===============================
 
 function showSection(section) {
 
-    const homeSection = document.getElementById("homeSection");
-    const shoppingSection = document.getElementById("shoppingSection");
+    const homeSection =
+        document.getElementById("homeSection");
 
-    const homeTab = document.getElementById("homeTab");
-    const shoppingTab = document.getElementById("shoppingTab");
+    const shoppingSection =
+        document.getElementById("shoppingSection");
+
+    const homeTab =
+        document.getElementById("homeTab");
+
+    const shoppingTab =
+        document.getElementById("shoppingTab");
+
 
     if (section === "home") {
 
         homeSection.classList.remove("hidden");
+
         shoppingSection.classList.add("hidden");
 
         homeTab.classList.add("active");
+
         shoppingTab.classList.remove("active");
 
     } else {
 
         homeSection.classList.add("hidden");
+
         shoppingSection.classList.remove("hidden");
 
         homeTab.classList.remove("active");
+
         shoppingTab.classList.add("active");
     }
 }
@@ -128,21 +134,226 @@ function updateStats() {
 // ТОВАРЫ
 // ===============================
 
+function renderProducts() {
+
+    const container =
+        document.getElementById("productsList");
+
+
+    if (!products.length) {
+
+        container.innerHTML = `
+            <div class="empty">
+
+                <div class="empty-icon">📦</div>
+
+                <h3>Пока ничего нет</h3>
+
+                <p>
+                    Добавьте первый товар,
+                    который есть дома.
+                </p>
+
+                <button
+                    class="button primary"
+                    style="margin-top:18px;padding:0 22px;"
+                    onclick="openAddModal()"
+                >
+                    ＋ Добавить товар
+                </button>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML = products.map(product => {
+
+        const quantity =
+            Number(product.quantity || 0);
+
+        const minQuantity =
+            Number(product.min_quantity || 0);
+
+        let status = "";
+
+
+        // МАЛО ТОВАРА
+
+        if (
+            minQuantity > 0 &&
+            quantity <= minQuantity
+        ) {
+
+            status = `
+                <span class="warning">
+                    ⚠️ Заканчивается
+                </span>
+            `;
+        }
+
+
+        // ПРОВЕРКА СРОКА
+
+        if (product.expiration_date) {
+
+            const today = new Date();
+
+            today.setHours(0, 0, 0, 0);
+
+
+            const expiration =
+                new Date(product.expiration_date);
+
+            expiration.setHours(0, 0, 0, 0);
+
+
+            const diff =
+                Math.ceil(
+                    (expiration - today) /
+                    (1000 * 60 * 60 * 24)
+                );
+
+
+            if (diff < 0) {
+
+                status = `
+                    <span class="expired">
+                        ⚠️ Срок истёк
+                    </span>
+                `;
+
+            } else if (diff <= 3) {
+
+                status = `
+                    <span class="warning">
+                        ⏰ Скоро срок
+                    </span>
+                `;
+            }
+        }
+
+
+        const expirationText =
+            product.expiration_date
+                ? `До ${formatDate(product.expiration_date)}`
+                : "Срок не указан";
+
+
+        // КТО ПОСЛЕДНИМ ПОТРАТИЛ
+
+        let usedByText = "";
+
+        if (product.last_used_by) {
+
+            usedByText = `
+                <div class="product-used">
+                    👤 Последним потратил пользователь
+                </div>
+            `;
+        }
+
+
+        return `
+
+            <div class="product-card">
+
+                <div class="product-top">
+
+                    <div>
+
+                        <div class="product-name">
+                            ${escapeHtml(product.name)}
+                        </div>
+
+                        <div class="product-category">
+                            ${escapeHtml(
+                                product.category || "Другое"
+                            )}
+                        </div>
+
+                    </div>
+
+
+                    <div class="product-quantity">
+
+                        ${quantity}
+
+                        ${escapeHtml(
+                            product.unit || "шт."
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="product-info">
+
+                    <span>
+                        ${expirationText}
+                    </span>
+
+                    ${status}
+
+                </div>
+
+
+                ${usedByText}
+
+
+                <button
+                    class="use-button"
+                    onclick="useProduct(${product.id})"
+                >
+                    − Потратить
+                </button>
+
+
+                <button
+                    class="use-button"
+                    onclick="editQuantity(
+                        ${product.id},
+                        ${quantity}
+                    )"
+                >
+                    ✏️ Изменить количество
+                </button>
+
+            </div>
+
+        `;
+
+    }).join("");
+}
+
+
+// ===============================
+// ПОТРАТИТЬ ТОВАР
+// ===============================
+
 async function useProduct(id) {
 
     const amountText =
         prompt("Сколько потратили?");
 
+
     if (amountText === null) {
         return;
     }
 
+
     const amount =
         Number(amountText);
 
+
     if (!amount || amount <= 0) {
 
-        alert("Введите количество больше нуля.");
+        alert(
+            "Введите количество больше нуля."
+        );
 
         return;
     }
@@ -188,82 +399,79 @@ async function useProduct(id) {
 
 
 // ===============================
-// ПОКУПКИ
+// ИЗМЕНИТЬ КОЛИЧЕСТВО
 // ===============================
 
-function renderShopping() {
+async function editQuantity(
+    id,
+    currentQuantity
+) {
 
-    const container =
-        document.getElementById("shoppingList");
+    const quantityText =
+        prompt(
+            "Введите новое количество:",
+            currentQuantity
+        );
 
-    if (!shopping.length) {
 
-        container.innerHTML = `
-            <div class="empty">
+    if (quantityText === null) {
+        return;
+    }
 
-                <div class="empty-icon">🛒</div>
 
-                <h3>Список покупок пуст</h3>
+    const quantity =
+        Number(quantityText);
 
-                <p>
-                    Добавьте то, что нужно купить.
-                </p>
 
-                <button
-                    class="button primary"
-                    style="margin-top:18px;padding:0 22px;"
-                    onclick="openShoppingModal()"
-                >
-                    ＋ Добавить покупку
-                </button>
+    if (
+        Number.isNaN(quantity) ||
+        quantity < 0
+    ) {
 
-            </div>
-        `;
+        alert(
+            "Введите число 0 или больше."
+        );
 
         return;
     }
 
 
-    container.innerHTML = shopping.map(item => {
+    try {
 
-        const checked =
-            item.is_bought ? "checked" : "";
+        const response =
+            await fetch(
+                `/api/product/${id}`,
+                {
+                    method: "PATCH",
 
-        const bought =
-            item.is_bought ? "bought" : "";
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
 
-
-        return `
-            <div class="shopping-item ${bought}">
-
-                <button
-                    class="shopping-check ${checked}"
-                    onclick="toggleShopping(
-                        ${item.id},
-                        ${!item.is_bought}
-                    )"
-                >
-                    ${item.is_bought ? "✓" : ""}
-                </button>
+                    body: JSON.stringify({
+                        quantity: quantity
+                    })
+                }
+            );
 
 
-                <div class="shopping-content">
+        if (!response.ok) {
+            throw new Error(
+                "Ошибка изменения количества"
+            );
+        }
 
-                    <div class="shopping-name">
-                        ${escapeHtml(item.name)}
-                    </div>
 
-                    <div class="shopping-quantity">
-                        ${item.quantity || 1}
-                        ${escapeHtml(item.unit || "шт.")}
-                    </div>
+        await loadState();
 
-                </div>
+    } catch (error) {
 
-            </div>
-        `;
+        console.error(error);
 
-    }).join("");
+        alert(
+            "Не получилось изменить количество."
+        );
+    }
 }
 
 
@@ -275,7 +483,9 @@ function openAddModal() {
 
     document
         .getElementById("productModal")
-        .classList.remove("hidden");
+        .classList
+        .remove("hidden");
+
 
     setTimeout(() => {
 
@@ -291,7 +501,8 @@ function closeAddModal() {
 
     document
         .getElementById("productModal")
-        .classList.add("hidden");
+        .classList
+        .add("hidden");
 }
 
 
@@ -303,9 +514,12 @@ async function saveProduct() {
             .value
             .trim();
 
+
     if (!name) {
 
-        alert("Введите название товара");
+        alert(
+            "Введите название товара"
+        );
 
         return;
     }
@@ -353,20 +567,26 @@ async function saveProduct() {
     try {
 
         const response =
-            await fetch("/api/product", {
+            await fetch(
+                "/api/product",
+                {
+                    method: "POST",
 
-                method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify(data)
-            });
+                    body:
+                        JSON.stringify(data)
+                }
+            );
 
 
         if (!response.ok) {
-            throw new Error("Ошибка сохранения");
+            throw new Error(
+                "Ошибка сохранения"
+            );
         }
 
 
@@ -375,6 +595,7 @@ async function saveProduct() {
         clearProductForm();
 
         await loadState();
+
 
     } catch (error) {
 
@@ -386,10 +607,6 @@ async function saveProduct() {
     }
 }
 
-
-// ===============================
-// ОЧИСТКА ФОРМЫ
-// ===============================
 
 function clearProductForm() {
 
@@ -415,11 +632,129 @@ function clearProductForm() {
 // ПОКУПКИ
 // ===============================
 
+function renderShopping() {
+
+    const container =
+        document.getElementById("shoppingList");
+
+
+    if (!shopping.length) {
+
+        container.innerHTML = `
+
+            <div class="empty">
+
+                <div class="empty-icon">🛒</div>
+
+                <h3>
+                    Список покупок пуст
+                </h3>
+
+                <p>
+                    Добавьте то,
+                    что нужно купить.
+                </p>
+
+                <button
+                    class="button primary"
+                    style="
+                        margin-top:18px;
+                        padding:0 22px;
+                    "
+                    onclick="openShoppingModal()"
+                >
+                    ＋ Добавить покупку
+                </button>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        shopping.map(item => {
+
+            const checked =
+                item.is_bought
+                    ? "checked"
+                    : "";
+
+            const bought =
+                item.is_bought
+                    ? "bought"
+                    : "";
+
+
+            return `
+
+                <div
+                    class="shopping-item ${bought}"
+                >
+
+                    <button
+                        class="shopping-check ${checked}"
+                        onclick="
+                            toggleShopping(
+                                ${item.id},
+                                ${!item.is_bought}
+                            )
+                        "
+                    >
+                        ${
+                            item.is_bought
+                                ? "✓"
+                                : ""
+                        }
+                    </button>
+
+
+                    <div
+                        class="shopping-content"
+                    >
+
+                        <div
+                            class="shopping-name"
+                        >
+                            ${escapeHtml(
+                                item.name
+                            )}
+                        </div>
+
+
+                        <div
+                            class="shopping-quantity"
+                        >
+                            ${item.quantity || 1}
+
+                            ${escapeHtml(
+                                item.unit || "шт."
+                            )}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }).join("");
+}
+
+
+// ===============================
+// ДОБАВЛЕНИЕ ПОКУПКИ
+// ===============================
+
 function openShoppingModal() {
 
     document
         .getElementById("shoppingModal")
-        .classList.remove("hidden");
+        .classList
+        .remove("hidden");
+
 
     setTimeout(() => {
 
@@ -435,7 +770,8 @@ function closeShoppingModal() {
 
     document
         .getElementById("shoppingModal")
-        .classList.add("hidden");
+        .classList
+        .add("hidden");
 }
 
 
@@ -447,9 +783,12 @@ async function saveShopping() {
             .value
             .trim();
 
+
     if (!name) {
 
-        alert("Введите название покупки");
+        alert(
+            "Введите название покупки"
+        );
 
         return;
     }
@@ -480,16 +819,20 @@ async function saveShopping() {
     try {
 
         const response =
-            await fetch("/api/shopping", {
+            await fetch(
+                "/api/shopping",
+                {
+                    method: "POST",
 
-                method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify(data)
-            });
+                    body:
+                        JSON.stringify(data)
+                }
+            );
 
 
         if (!response.ok) {
@@ -499,13 +842,16 @@ async function saveShopping() {
 
         closeShoppingModal();
 
+
         document
             .getElementById("shoppingName")
             .value = "";
 
+
         await loadState();
 
         showSection("shopping");
+
 
     } catch (error) {
 
@@ -522,7 +868,10 @@ async function saveShopping() {
 // ОТМЕТИТЬ ПОКУПКУ
 // ===============================
 
-async function toggleShopping(id, bought) {
+async function toggleShopping(
+    id,
+    bought
+) {
 
     try {
 
@@ -533,11 +882,18 @@ async function toggleShopping(id, bought) {
                     method: "PATCH",
 
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type":
+                            "application/json"
                     },
 
                     body: JSON.stringify({
-                        is_bought: bought
+                        is_bought: bought,
+
+                        telegram_id:
+                            telegramId,
+
+                        user_name:
+                            userName
                     })
                 }
             );
@@ -549,6 +905,7 @@ async function toggleShopping(id, bought) {
 
 
         await loadState();
+
 
     } catch (error) {
 
@@ -562,7 +919,7 @@ async function toggleShopping(id, bought) {
 
 
 // ===============================
-// ДАТА
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ===============================
 
 function formatDate(value) {
@@ -570,26 +927,48 @@ function formatDate(value) {
     const parts =
         value.split("-");
 
+
     if (parts.length !== 3) {
         return value;
     }
 
-    return `${parts[2]}.${parts[1]}.${parts[0]}`;
+
+    return `
+        ${parts[2]}.
+        ${parts[1]}.
+        ${parts[0]}
+    `;
 }
 
-
-// ===============================
-// БЕЗОПАСНЫЙ ТЕКСТ
-// ===============================
 
 function escapeHtml(value) {
 
     return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 }
 
 
@@ -600,8 +979,6 @@ function escapeHtml(value) {
 document.addEventListener(
     "DOMContentLoaded",
     () => {
-
         loadState();
-
     }
 );
