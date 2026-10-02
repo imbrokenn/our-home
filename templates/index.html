@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Наш дом</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header><div><div class="eyebrow">🏠 НАШ ДОМ</div><h1>Запасы</h1></div><button id="inviteBtn">👥</button></header>
+  <nav>
+    <button class="tab active" data-tab="home">🏠 Дом</button>
+    <button class="tab" data-tab="shopping">🛒 Покупки</button>
+  </nav>
+  <section id="home">
+    <div class="summary" id="summary"></div>
+    <button class="primary" id="addBtn">＋ Добавить</button>
+    <div id="products"></div>
+  </section>
+  <section id="shopping" class="hidden">
+    <button class="primary" id="shopAddBtn">＋ В список покупок</button>
+    <div id="shoppingList"></div>
+  </section>
+</div>
+
+<div id="modal" class="modal hidden">
+ <div class="sheet">
+  <h2 id="modalTitle">Добавить</h2>
+  <input id="name" placeholder="Например: туалетная бумага">
+  <select id="category"></select>
+  <div class="row"><input id="quantity" type="number" min="0" step="0.1" value="1"><input id="unit" placeholder="шт."></div>
+  <div class="row"><input id="min" type="number" min="0" step="0.1" value="0" placeholder="Минимум"><input id="expiry" type="date"></div>
+  <button class="primary" id="save">Сохранить</button>
+  <button class="cancel" id="close">Отмена</button>
+ </div>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>
