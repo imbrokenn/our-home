@@ -128,141 +128,62 @@ function updateStats() {
 // ТОВАРЫ
 // ===============================
 
-function renderProducts() {
+async function useProduct(id) {
 
-    const container =
-        document.getElementById("productsList");
+    const amountText =
+        prompt("Сколько потратили?");
 
-    if (!products.length) {
+    if (amountText === null) {
+        return;
+    }
 
-        container.innerHTML = `
-            <div class="empty">
+    const amount =
+        Number(amountText);
 
-                <div class="empty-icon">📦</div>
+    if (!amount || amount <= 0) {
 
-                <h3>Пока ничего нет</h3>
-
-                <p>
-                    Добавьте первый товар,
-                    который есть дома.
-                </p>
-
-                <button
-                    class="button primary"
-                    style="margin-top:18px;padding:0 22px;"
-                    onclick="openAddModal()"
-                >
-                    ＋ Добавить товар
-                </button>
-
-            </div>
-        `;
+        alert("Введите количество больше нуля.");
 
         return;
     }
 
 
-    container.innerHTML = products.map(product => {
+    try {
 
-        const quantity =
-            Number(product.quantity || 0);
+        const response =
+            await fetch(
+                `/api/product/${id}/use`,
+                {
+                    method: "POST",
 
-        const minQuantity =
-            Number(product.min_quantity || 0);
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
 
-        let status = "";
+                    body: JSON.stringify({
+                        telegram_id: telegramId,
+                        user_name: userName,
+                        amount: amount
+                    })
+                }
+            );
 
-        if (
-            minQuantity > 0 &&
-            quantity <= minQuantity
-        ) {
-            status = `
-                <span class="warning">
-                    ⚠️ Заканчивается
-                </span>
-            `;
+
+        if (!response.ok) {
+            throw new Error("Ошибка");
         }
 
 
-        if (product.expiration_date) {
+        await loadState();
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+    } catch (error) {
 
-            const expiration =
-                new Date(product.expiration_date);
+        console.error(error);
 
-            expiration.setHours(0, 0, 0, 0);
-
-            const diff =
-                Math.ceil(
-                    (expiration - today) /
-                    (1000 * 60 * 60 * 24)
-                );
-
-            if (diff < 0) {
-
-                status = `
-                    <span class="expired">
-                        ⚠️ Срок истёк
-                    </span>
-                `;
-
-            } else if (diff <= 3) {
-
-                status = `
-                    <span class="warning">
-                        ⏰ Скоро срок
-                    </span>
-                `;
-            }
-        }
-
-
-        const expirationText =
-            product.expiration_date
-                ? `До ${formatDate(product.expiration_date)}`
-                : "Срок не указан";
-
-
-        return `
-            <div class="product-card">
-
-                <div class="product-top">
-
-                    <div>
-
-                        <div class="product-name">
-                            ${escapeHtml(product.name)}
-                        </div>
-
-                        <div class="product-category">
-                            ${escapeHtml(product.category || "Другое")}
-                        </div>
-
-                    </div>
-
-                    <div class="product-quantity">
-                        ${quantity} ${escapeHtml(product.unit || "шт.")}
-                    </div>
-
-                </div>
-
-
-                <div class="product-info">
-
-                    <span>
-                        ${expirationText}
-                    </span>
-
-                    ${status}
-
-                </div>
-
-            </div>
-        `;
-
-    }).join("");
+        alert(
+            "Не получилось изменить количество."
+        );
+    }
 }
 
 
