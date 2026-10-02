@@ -23,7 +23,7 @@ def sb(path, method="GET", payload=None, params=None):
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json",
+        "Content-Type": "application/json","Prefer": "return=representation",
     }
     r = requests.request(method, SUPABASE_URL + "/rest/v1/" + path,
                          headers=headers, json=payload, params=params, timeout=20)
